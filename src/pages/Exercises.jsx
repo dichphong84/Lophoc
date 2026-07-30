@@ -1,16 +1,29 @@
 import { useState, useEffect } from 'react';
-import { Download, Upload } from 'lucide-react';
-import { getExercises } from '../lib/db';
+import { Download, Upload, MessageCircle } from 'lucide-react';
+import { getExercises, getTeacher } from '../lib/db';
 
 export default function Exercises() {
   const [exercises, setExercises] = useState([]);
+  const [teacher, setTeacher] = useState(null);
 
   useEffect(() => {
     async function load() {
       setExercises(await getExercises());
+      setTeacher(await getTeacher());
     }
     load();
   }, []);
+
+  const handleSubmit = (title) => {
+    if (teacher && teacher.phone) {
+      let phone = teacher.phone.replace(/[^0-9]/g, '');
+      if (phone.startsWith('0')) phone = '84' + phone.substring(1);
+      const message = encodeURIComponent(`Dạ thưa thầy/cô, em nộp bài tập: ${title}`);
+      window.open(`https://zalo.me/${phone}?text=${message}`, '_blank');
+    } else {
+      alert('Giáo viên chưa cập nhật số điện thoại Zalo!');
+    }
+  };
 
   return (
     <div className="animate-fade-in">
@@ -33,15 +46,9 @@ export default function Exercises() {
                 <button className="btn btn-outline">
                   <Download size={16} /> Tải Đề
                 </button>
-                {ex.status === 'pending' ? (
-                  <button className="btn btn-primary">
-                    <Upload size={16} /> Nộp Bài
-                  </button>
-                ) : (
-                  <button className="btn" style={{ backgroundColor: 'var(--secondary-color)', color: 'white', cursor: 'default' }}>
-                    Đã Nộp
-                  </button>
-                )}
+                <button onClick={() => handleSubmit(ex.title)} className="btn btn-primary" style={{ backgroundColor: '#0068ff', border: 'none' }}>
+                  <MessageCircle size={16} /> Nộp Bài qua Zalo
+                </button>
               </div>
             </div>
           </div>
