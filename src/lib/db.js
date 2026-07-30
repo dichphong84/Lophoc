@@ -1,158 +1,124 @@
-const DB_SUBJECTS = 'lophoc_db_subjects';
-const DB_ANNOUNCEMENTS = 'lophoc_db_announcements';
-const DB_EXERCISES = 'lophoc_db_exercises';
-const DB_CHAPTERS = 'lophoc_db_chapters';
-const DB_RESOURCES = 'lophoc_db_resources';
-const DB_EVENTS = 'lophoc_db_events';
-const DB_TEACHER = 'lophoc_db_teacher';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- QUẢN LÝ MÔN HỌC ---
-export function getSubjects() {
-  const data = localStorage.getItem(DB_SUBJECTS);
-  return data ? JSON.parse(data) : ['Toán Học', 'Ngữ Văn', 'Tiếng Anh'];
+export async function getSubjects() {
+  const { data, error } = await supabase.from('subjects').select('*').order('created_at', { ascending: true });
+  if (error) { console.error(error); return []; }
+  return data.map(s => s.name);
 }
 
-export function addSubject(subject) {
-  const subjects = getSubjects();
-  if (!subjects.includes(subject)) {
-    subjects.push(subject);
-    localStorage.setItem(DB_SUBJECTS, JSON.stringify(subjects));
-  }
+export async function addSubject(subject) {
+  await supabase.from('subjects').insert([{ name: subject }]);
 }
 
-export function removeSubject(subject) {
-  const subjects = getSubjects();
-  localStorage.setItem(DB_SUBJECTS, JSON.stringify(subjects.filter(s => s !== subject)));
-  // Cần xóa luôn các chương thuộc môn này
-  const chapters = getChapters();
-  localStorage.setItem(DB_CHAPTERS, JSON.stringify(chapters.filter(c => c.subject !== subject)));
+export async function removeSubject(subject) {
+  await supabase.from('subjects').delete().eq('name', subject);
+  await supabase.from('chapters').delete().eq('subject', subject);
 }
 
 // --- QUẢN LÝ THÔNG BÁO ---
-export function getAnnouncements() {
-  const data = localStorage.getItem(DB_ANNOUNCEMENTS);
-  return data ? JSON.parse(data) : [
-    { id: 1, title: 'Lịch kiểm tra 15 phút Toán', content: 'Thứ 6 tuần này, nội dung: Giải hệ phương trình.', type: 'exam', date: new Date().toISOString() }
-  ];
+export async function getAnnouncements() {
+  const { data, error } = await supabase.from('announcements').select('*').order('date', { ascending: false });
+  return data || [];
 }
 
-export function addAnnouncement(announcement) {
-  const announcements = getAnnouncements();
-  announcements.unshift({ ...announcement, id: Date.now(), date: new Date().toISOString() });
-  localStorage.setItem(DB_ANNOUNCEMENTS, JSON.stringify(announcements));
+export async function addAnnouncement(announcement) {
+  await supabase.from('announcements').insert([announcement]);
 }
 
-export function removeAnnouncement(id) {
-  localStorage.setItem(DB_ANNOUNCEMENTS, JSON.stringify(getAnnouncements().filter(a => a.id !== id)));
+export async function removeAnnouncement(id) {
+  await supabase.from('announcements').delete().eq('id', id);
 }
 
 // --- QUẢN LÝ BÀI TẬP ---
-export function getExercises() {
-  const data = localStorage.getItem(DB_EXERCISES);
-  return data ? JSON.parse(data) : [
-    { id: 1, title: 'Tuần 1: Bài tập Toán Hình học', deadline: '2026-08-05', urgent: true, status: 'pending' }
-  ];
+export async function getExercises() {
+  const { data, error } = await supabase.from('exercises').select('*').order('created_at', { ascending: false });
+  return data || [];
 }
 
-export function addExercise(exercise) {
-  const exercises = getExercises();
-  exercises.unshift({ ...exercise, id: Date.now(), status: 'pending' });
-  localStorage.setItem(DB_EXERCISES, JSON.stringify(exercises));
+export async function addExercise(exercise) {
+  await supabase.from('exercises').insert([exercise]);
 }
 
-export function removeExercise(id) {
-  localStorage.setItem(DB_EXERCISES, JSON.stringify(getExercises().filter(e => e.id !== id)));
+export async function removeExercise(id) {
+  await supabase.from('exercises').delete().eq('id', id);
 }
 
 // --- QUẢN LÝ BÀI HỌC (CHƯƠNG & BÀI) ---
-// Structure: { id, subject, title, items: [{id, name, type, link}] }
-export function getChapters() {
-  const data = localStorage.getItem(DB_CHAPTERS);
-  return data ? JSON.parse(data) : [
-    {
-      id: 1, subject: 'Toán Học', title: 'Chương 1: Hệ phương trình', items: [
-        { id: 101, name: 'Bài 1: Khái niệm', type: 'video', link: '#' }
-      ]
-    }
-  ];
+export async function getChapters() {
+  const { data, error } = await supabase.from('chapters').select('*').order('created_at', { ascending: true });
+  return data || [];
 }
 
-export function addChapter(subject, title) {
-  const chapters = getChapters();
-  chapters.push({ id: Date.now(), subject, title, items: [] });
-  localStorage.setItem(DB_CHAPTERS, JSON.stringify(chapters));
+export async function addChapter(subject, title) {
+  await supabase.from('chapters').insert([{ subject, title, items: [] }]);
 }
 
-export function removeChapter(chapterId) {
-  localStorage.setItem(DB_CHAPTERS, JSON.stringify(getChapters().filter(c => c.id !== chapterId)));
+export async function removeChapter(chapterId) {
+  await supabase.from('chapters').delete().eq('id', chapterId);
 }
 
-export function addLessonToChapter(chapterId, lesson) {
-  const chapters = getChapters();
-  const chapter = chapters.find(c => c.id === chapterId);
-  if (chapter) {
-    chapter.items.push({ ...lesson, id: Date.now() });
-    localStorage.setItem(DB_CHAPTERS, JSON.stringify(chapters));
+export async function addLessonToChapter(chapterId, lesson) {
+  // Fetch current items first
+  const { data } = await supabase.from('chapters').select('items').eq('id', chapterId).single();
+  if (data) {
+    const newItems = [...data.items, { ...lesson, id: Date.now() }];
+    await supabase.from('chapters').update({ items: newItems }).eq('id', chapterId);
   }
 }
 
-export function removeLessonFromChapter(chapterId, lessonId) {
-  const chapters = getChapters();
-  const chapter = chapters.find(c => c.id === chapterId);
-  if (chapter) {
-    chapter.items = chapter.items.filter(l => l.id !== lessonId);
-    localStorage.setItem(DB_CHAPTERS, JSON.stringify(chapters));
+export async function removeLessonFromChapter(chapterId, lessonId) {
+  const { data } = await supabase.from('chapters').select('items').eq('id', chapterId).single();
+  if (data) {
+    const newItems = data.items.filter(l => l.id !== lessonId);
+    await supabase.from('chapters').update({ items: newItems }).eq('id', chapterId);
   }
 }
 
 // --- QUẢN LÝ TÀI LIỆU ---
-export function getResources() {
-  const data = localStorage.getItem(DB_RESOURCES);
-  return data ? JSON.parse(data) : [
-    { id: 1, name: 'Đề cương ôn tập Giữa kì 1', type: 'pdf', link: '#' }
-  ];
+export async function getResources() {
+  const { data, error } = await supabase.from('resources').select('*').order('created_at', { ascending: false });
+  return data || [];
 }
 
-export function addResource(resource) {
-  const resources = getResources();
-  resources.unshift({ ...resource, id: Date.now() });
-  localStorage.setItem(DB_RESOURCES, JSON.stringify(resources));
+export async function addResource(resource) {
+  await supabase.from('resources').insert([resource]);
 }
 
-export function removeResource(id) {
-  localStorage.setItem(DB_RESOURCES, JSON.stringify(getResources().filter(r => r.id !== id)));
+export async function removeResource(id) {
+  await supabase.from('resources').delete().eq('id', id);
 }
 
 // --- QUẢN LÝ LỊCH ---
-export function getEvents() {
-  const data = localStorage.getItem(DB_EVENTS);
-  return data ? JSON.parse(data) : [];
+export async function getEvents() {
+  const { data, error } = await supabase.from('events').select('*').order('date', { ascending: true });
+  return data || [];
 }
 
-export function addEvent(event) {
-  const events = getEvents();
-  // Sort by date ascending automatically
-  events.push({ ...event, id: Date.now() });
-  events.sort((a, b) => new Date(a.date) - new Date(b.date));
-  localStorage.setItem(DB_EVENTS, JSON.stringify(events));
+export async function addEvent(event) {
+  await supabase.from('events').insert([event]);
 }
 
-export function removeEvent(id) {
-  localStorage.setItem(DB_EVENTS, JSON.stringify(getEvents().filter(e => e.id !== id)));
+export async function removeEvent(id) {
+  await supabase.from('events').delete().eq('id', id);
 }
 
 // --- QUẢN LÝ GIÁO VIÊN ---
-export function getTeacher() {
-  const data = localStorage.getItem(DB_TEACHER);
-  return data ? JSON.parse(data) : {
+export async function getTeacher() {
+  const { data, error } = await supabase.from('teacher').select('*').eq('id', 1).single();
+  return data || {
     name: 'Thầy/Cô Giáo',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher',
-    quote: '"Chào các em học sinh yêu quý! Hãy luôn cố gắng học tập và rèn luyện. Thầy/Cô luôn ở đây để hỗ trợ các em trong suốt năm học này."',
+    quote: '"Chào các em học sinh yêu quý!"',
     phone: '0123 456 789 (Zalo)',
     email: 'giaovien@lop918ltk.edu.vn'
   };
 }
 
-export function updateTeacher(teacherData) {
-  localStorage.setItem(DB_TEACHER, JSON.stringify(teacherData));
+export async function updateTeacher(teacherData) {
+  await supabase.from('teacher').update(teacherData).eq('id', 1);
 }

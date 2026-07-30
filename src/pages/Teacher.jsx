@@ -6,7 +6,10 @@ export default function Teacher() {
   const [teacher, setTeacher] = useState(null);
 
   useEffect(() => {
-    setTeacher(getTeacher());
+    async function load() {
+      setTeacher(await getTeacher());
+    }
+    load();
   }, []);
 
   if (!teacher) return null;

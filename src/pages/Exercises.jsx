@@ -6,7 +6,10 @@ export default function Exercises() {
   const [exercises, setExercises] = useState([]);
 
   useEffect(() => {
-    setExercises(getExercises());
+    async function load() {
+      setExercises(await getExercises());
+    }
+    load();
   }, []);
 
   return (

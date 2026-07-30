@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, FileText, PlayCircle } from 'lucide-react';
-import { getSubjects, getChapters } from '../lib/db';
+import { BookOpen, PlayCircle, FileText } from 'lucide-react';
+import { getChapters, getSubjects } from '../lib/db';
 
 export default function Lessons() {
-  const [subjects, setSubjects] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [activeSubject, setActiveSubject] = useState('');
+  const [subjects, setSubjects] = useState([]);
 
   useEffect(() => {
-    const loadedSubjects = getSubjects();
-    setSubjects(loadedSubjects);
-    if (loadedSubjects.length > 0) {
-      setActiveSubject(loadedSubjects[0]);
+    async function load() {
+      const loadedSubjects = await getSubjects();
+      setSubjects(loadedSubjects);
+      if (loadedSubjects.length > 0) {
+        setActiveSubject(loadedSubjects[0]);
+      }
+      setChapters(await getChapters());
     }
-    setChapters(getChapters());
+    load();
   }, []);
 
   const currentChapters = chapters.filter(c => c.subject === activeSubject);

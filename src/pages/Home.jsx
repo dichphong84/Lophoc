@@ -8,9 +8,13 @@ export default function Home() {
   const [exercises, setExercises] = useState([]);
 
   useEffect(() => {
-    setAnnouncements(getAnnouncements());
-    // Lấy tối đa 3 bài tập mới nhất/khẩn cấp để hiện ra trang chủ
-    setExercises(getExercises().slice(0, 3));
+    async function fetchData() {
+      const anns = await getAnnouncements();
+      setAnnouncements(anns);
+      const exs = await getExercises();
+      setExercises(exs.slice(0, 3));
+    }
+    fetchData();
   }, []);
 
   return (

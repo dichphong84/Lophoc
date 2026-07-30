@@ -58,21 +58,21 @@ export default function Admin() {
     }
   }, [isAuthenticated]);
 
-  const loadData = () => {
-    const subs = getSubjects();
+  const loadData = async () => {
+    const subs = await getSubjects();
     setSubjects(subs);
     if (subs.length > 0 && !selectedSubject) setSelectedSubject(subs[0]);
-    setChapters(getChapters());
-    setAnnouncements(getAnnouncements());
-    setExercises(getExercises());
-    setResources(getResources());
-    setEvents(getEvents());
-    setTeacher(getTeacher());
+    setChapters(await getChapters());
+    setAnnouncements(await getAnnouncements());
+    setExercises(await getExercises());
+    setResources(await getResources());
+    setEvents(await getEvents());
+    setTeacher(await getTeacher());
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === '123456') {
+    if (password === '12345678@') {
       setIsAuthenticated(true);
       sessionStorage.setItem('admin_auth', 'true');
     } else alert('Mật khẩu không đúng!');
@@ -81,31 +81,31 @@ export default function Admin() {
 
   // --- ACTIONS ---
   // Subjects
-  const handleAddSubject = (e) => { e.preventDefault(); if (newSubject.trim()) { addSubject(newSubject.trim()); loadData(); setNewSubject(''); } };
-  const handleRemoveSubject = (subject) => { if (window.confirm('Xóa môn học này và toàn bộ chương bên trong?')) { removeSubject(subject); loadData(); if(selectedSubject === subject) setSelectedSubject(''); } };
+  const handleAddSubject = async (e) => { e.preventDefault(); if (newSubject.trim()) { await addSubject(newSubject.trim()); await loadData(); setNewSubject(''); } };
+  const handleRemoveSubject = async (subject) => { if (window.confirm('Xóa môn học này và toàn bộ chương bên trong?')) { await removeSubject(subject); await loadData(); if(selectedSubject === subject) setSelectedSubject(''); } };
   
   // Chapters
-  const handleAddChapter = (e) => { e.preventDefault(); if (newChapterTitle.trim()) { addChapter(selectedSubject, newChapterTitle.trim()); loadData(); setNewChapterTitle(''); } };
-  const handleRemoveChapter = (id) => { if (window.confirm('Xóa chương này?')) { removeChapter(id); loadData(); } };
+  const handleAddChapter = async (e) => { e.preventDefault(); if (newChapterTitle.trim()) { await addChapter(selectedSubject, newChapterTitle.trim()); await loadData(); setNewChapterTitle(''); } };
+  const handleRemoveChapter = async (id) => { if (window.confirm('Xóa chương này?')) { await removeChapter(id); await loadData(); } };
 
   // Lessons
-  const handleAddLesson = (e) => {
+  const handleAddLesson = async (e) => {
     e.preventDefault();
     if (lessonChapterId && newLessonName.trim()) {
-      addLessonToChapter(Number(lessonChapterId), { name: newLessonName, type: newLessonType, link: newLessonLink });
-      loadData();
+      await addLessonToChapter(Number(lessonChapterId), { name: newLessonName, type: newLessonType, link: newLessonLink });
+      await loadData();
       setNewLessonName(''); setNewLessonLink('');
     } else alert('Vui lòng chọn chương và nhập tên bài học!');
   };
 
   // Resources
-  const handleAddResource = (e) => { e.preventDefault(); if (newResName.trim()) { addResource({ name: newResName, type: newResType, link: newResLink }); loadData(); setNewResName(''); setNewResLink(''); } };
+  const handleAddResource = async (e) => { e.preventDefault(); if (newResName.trim()) { await addResource({ name: newResName, type: newResType, link: newResLink }); await loadData(); setNewResName(''); setNewResLink(''); } };
   
   // Events
-  const handleAddEvent = (e) => { e.preventDefault(); if (newEvTitle.trim() && newEvDate) { addEvent({ title: newEvTitle, date: newEvDate, description: newEvDesc, type: newEvType }); loadData(); setNewEvTitle(''); setNewEvDesc(''); setNewEvDate(''); } };
+  const handleAddEvent = async (e) => { e.preventDefault(); if (newEvTitle.trim() && newEvDate) { await addEvent({ title: newEvTitle, date: newEvDate, description: newEvDesc, type: newEvType }); await loadData(); setNewEvTitle(''); setNewEvDesc(''); setNewEvDate(''); } };
   
   // Teacher
-  const handleSaveTeacher = (e) => { e.preventDefault(); updateTeacher(teacher); alert('Đã lưu thông tin Giáo viên!'); loadData(); };
+  const handleSaveTeacher = async (e) => { e.preventDefault(); await updateTeacher(teacher); alert('Đã lưu thông tin Giáo viên!'); await loadData(); };
 
   if (!isAuthenticated) return (
     <div className="animate-fade-in" style={{ display: 'flex', justifyContent: 'center', marginTop: '4rem' }}>
@@ -113,7 +113,7 @@ export default function Admin() {
         <Lock size={48} color="var(--primary-color)" style={{ margin: '0 auto 1rem' }} />
         <h2 className="section-title">Đăng nhập Quản Trị CMS</h2>
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <input type="password" placeholder="Nhập mật khẩu (123456)" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }} />
+          <input type="password" placeholder="Nhập mật khẩu quản trị..." value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }} />
           <button type="submit" className="btn btn-primary">Đăng nhập</button>
         </form>
       </div>
@@ -194,7 +194,7 @@ export default function Admin() {
                           <div>
                             <span style={{ fontWeight: 500 }}>[{lesson.type === 'video' ? 'Video' : 'Tài liệu'}]</span> {lesson.name}
                           </div>
-                          <button onClick={() => { removeLessonFromChapter(chapter.id, lesson.id); loadData(); }} style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}><Trash2 size={16}/></button>
+                          <button onClick={async () => { await removeLessonFromChapter(chapter.id, lesson.id); await loadData(); }} style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}><Trash2 size={16}/></button>
                         </li>
                       ))}
                     </ul>
@@ -233,7 +233,7 @@ export default function Admin() {
                   <div>
                     <span style={{ fontWeight: 600 }}>{r.name}</span> <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>({r.type})</span>
                   </div>
-                  <button onClick={() => {removeResource(r.id); loadData();}} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem' }}><Trash2 size={18}/></button>
+                  <button onClick={async () => {await removeResource(r.id); await loadData();}} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem' }}><Trash2 size={18}/></button>
                 </li>
               ))}
             </ul>
@@ -262,7 +262,7 @@ export default function Admin() {
                     <h3 style={{ color: ev.type === 'exam' ? 'var(--danger-color)' : 'var(--primary-color)' }}>{ev.title}</h3>
                     <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Ngày: {ev.date}</div>
                   </div>
-                  <button onClick={() => {removeEvent(ev.id); loadData();}} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem' }}><Trash2 size={18}/></button>
+                  <button onClick={async () => {await removeEvent(ev.id); await loadData();}} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem' }}><Trash2 size={18}/></button>
                 </li>
               ))}
             </ul>
@@ -305,7 +305,7 @@ export default function Admin() {
         {activeTab === 'announcements' && (
           <div>
             <h2 className="section-title">Quản lý Thông Báo</h2>
-            <form onSubmit={(e) => { e.preventDefault(); if (newAnnTitle.trim() && newAnnContent.trim()) { addAnnouncement({ title: newAnnTitle, content: newAnnContent, type: newAnnType }); loadData(); setNewAnnTitle(''); setNewAnnContent(''); } }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', padding: '1.5rem', background: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
+            <form onSubmit={async (e) => { e.preventDefault(); if (newAnnTitle.trim() && newAnnContent.trim()) { await addAnnouncement({ title: newAnnTitle, content: newAnnContent, type: newAnnType }); await loadData(); setNewAnnTitle(''); setNewAnnContent(''); } }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', padding: '1.5rem', background: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
               <input type="text" placeholder="Tiêu đề thông báo..." value={newAnnTitle} onChange={(e) => setNewAnnTitle(e.target.value)} style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }} required />
               <textarea placeholder="Nội dung chi tiết..." value={newAnnContent} onChange={(e) => setNewAnnContent(e.target.value)} style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', minHeight: '80px' }} required />
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -324,7 +324,7 @@ export default function Admin() {
                     <h3 style={{ color: a.type === 'exam' ? 'var(--primary-color)' : a.type === 'urgent' ? 'var(--danger-color)' : 'var(--text-primary)' }}>{a.title}</h3>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{a.content}</p>
                   </div>
-                  <button onClick={() => { if(window.confirm('Xóa?')) { removeAnnouncement(a.id); loadData(); } }} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem', height: 'fit-content' }}><Trash2 size={18} /></button>
+                  <button onClick={async () => { if(window.confirm('Xóa?')) { await removeAnnouncement(a.id); await loadData(); } }} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem', height: 'fit-content' }}><Trash2 size={18} /></button>
                 </li>
               ))}
             </ul>
@@ -335,7 +335,7 @@ export default function Admin() {
         {activeTab === 'exercises' && (
           <div>
             <h2 className="section-title">Quản lý Bài Tập</h2>
-            <form onSubmit={(e) => { e.preventDefault(); if (newExTitle.trim() && newExDeadline.trim()) { addExercise({ title: newExTitle, deadline: newExDeadline, urgent: newExUrgent }); loadData(); setNewExTitle(''); setNewExDeadline(''); setNewExUrgent(false); } }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', padding: '1.5rem', background: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
+            <form onSubmit={async (e) => { e.preventDefault(); if (newExTitle.trim() && newExDeadline.trim()) { await addExercise({ title: newExTitle, deadline: newExDeadline, urgent: newExUrgent }); await loadData(); setNewExTitle(''); setNewExDeadline(''); setNewExUrgent(false); } }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', padding: '1.5rem', background: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
               <input type="text" placeholder="Tên bài tập (VD: Bài tập Toán Chương 1)" value={newExTitle} onChange={(e) => setNewExTitle(e.target.value)} style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }} required />
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -356,7 +356,7 @@ export default function Admin() {
                     <h3 style={{ fontSize: '1.1rem' }}>{ex.title}</h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Hạn nộp: {ex.deadline}</p>
                   </div>
-                  <button onClick={() => { if(window.confirm('Xóa?')) { removeExercise(ex.id); loadData(); } }} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem' }}><Trash2 size={18} /></button>
+                  <button onClick={async () => { if(window.confirm('Xóa?')) { await removeExercise(ex.id); await loadData(); } }} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem' }}><Trash2 size={18} /></button>
                 </li>
               ))}
             </ul>

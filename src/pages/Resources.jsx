@@ -7,7 +7,10 @@ export default function Resources() {
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    setResources(getResources());
+    async function load() {
+      setResources(await getResources());
+    }
+    load();
   }, []);
 
   const getIcon = (type) => {

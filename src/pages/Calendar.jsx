@@ -6,7 +6,10 @@ export default function Calendar() {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    setEvents(getEvents());
+    async function load() {
+      setEvents(await getEvents());
+    }
+    load();
   }, []);
 
   return (
