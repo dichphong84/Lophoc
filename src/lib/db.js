@@ -34,6 +34,10 @@ export async function removeAnnouncement(id) {
   await supabase.from('announcements').delete().eq('id', id);
 }
 
+export async function updateAnnouncement(id, announcement) {
+  await supabase.from('announcements').update(announcement).eq('id', id);
+}
+
 // --- QUẢN LÝ BÀI TẬP ---
 export async function getExercises() {
   const { data, error } = await supabase.from('exercises').select('*').order('created_at', { ascending: false });

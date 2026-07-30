@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { 
   getSubjects, addSubject, removeSubject,
-  getAnnouncements, addAnnouncement, removeAnnouncement,
+  getAnnouncements, addAnnouncement, removeAnnouncement, updateAnnouncement,
   getExercises, addExercise, removeExercise,
   getChapters, addChapter, removeChapter, addLessonToChapter, removeLessonFromChapter,
   getResources, addResource, removeResource,
   getEvents, addEvent, removeEvent,
   getTeacher, updateTeacher
 } from '../lib/db';
-import { Lock, Trash2, Plus, Bell, PenTool, BookOpen, Layers, FileText, Calendar, User, Save } from 'lucide-react';
+import { Lock, Trash2, Edit2, Plus, Bell, PenTool, BookOpen, Layers, FileText, Calendar, User, Save, X } from 'lucide-react';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => sessionStorage.getItem('admin_auth') === 'true');
@@ -39,6 +39,7 @@ export default function Admin() {
   const [newAnnTitle, setNewAnnTitle] = useState('');
   const [newAnnContent, setNewAnnContent] = useState('');
   const [newAnnType, setNewAnnType] = useState('info');
+  const [editingAnnId, setEditingAnnId] = useState(null);
 
   const [newExTitle, setNewExTitle] = useState('');
   const [newExDeadline, setNewExDeadline] = useState('');
@@ -305,7 +306,7 @@ export default function Admin() {
         {activeTab === 'announcements' && (
           <div>
             <h2 className="section-title">Quản lý Thông Báo</h2>
-            <form onSubmit={async (e) => { e.preventDefault(); if (newAnnTitle.trim() && newAnnContent.trim()) { await addAnnouncement({ title: newAnnTitle, content: newAnnContent, type: newAnnType }); await loadData(); setNewAnnTitle(''); setNewAnnContent(''); } }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', padding: '1.5rem', background: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
+            <form onSubmit={async (e) => { e.preventDefault(); if (newAnnTitle.trim() && newAnnContent.trim()) { if (editingAnnId) { await updateAnnouncement(editingAnnId, { title: newAnnTitle, content: newAnnContent, type: newAnnType }); } else { await addAnnouncement({ title: newAnnTitle, content: newAnnContent, type: newAnnType }); } await loadData(); setNewAnnTitle(''); setNewAnnContent(''); setEditingAnnId(null); } }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', padding: '1.5rem', background: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
               <input type="text" placeholder="Tiêu đề thông báo..." value={newAnnTitle} onChange={(e) => setNewAnnTitle(e.target.value)} style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }} required />
               <textarea placeholder="Nội dung chi tiết..." value={newAnnContent} onChange={(e) => setNewAnnContent(e.target.value)} style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', minHeight: '80px' }} required />
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -314,17 +315,21 @@ export default function Admin() {
                   <option value="exam">Lịch kiểm tra</option>
                   <option value="urgent">Khẩn cấp</option>
                 </select>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1, backgroundColor: 'var(--accent-color)' }}><Plus size={18} /> Đăng Thông Báo</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, backgroundColor: editingAnnId ? 'var(--primary-color)' : 'var(--accent-color)' }}>{editingAnnId ? <><Save size={18} /> Cập Nhật</> : <><Plus size={18} /> Đăng Thông Báo</>}</button>
+                {editingAnnId && <button type="button" onClick={() => { setEditingAnnId(null); setNewAnnTitle(''); setNewAnnContent(''); }} className="btn btn-outline" style={{ padding: '0.75rem', color: 'var(--text-secondary)', borderColor: 'var(--border-color)' }}><X size={18} /> Hủy</button>}
               </div>
             </form>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {announcements.map(a => (
                 <li key={a.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h3 style={{ color: a.type === 'exam' ? 'var(--primary-color)' : a.type === 'urgent' ? 'var(--danger-color)' : 'var(--text-primary)' }}>{a.title}</h3>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{a.content}</p>
                   </div>
-                  <button onClick={async () => { if(window.confirm('Xóa?')) { await removeAnnouncement(a.id); await loadData(); } }} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem', height: 'fit-content' }}><Trash2 size={18} /></button>
+                  <div style={{ display: 'flex', gap: '0.5rem', height: 'fit-content' }}>
+                    <button onClick={() => { setEditingAnnId(a.id); setNewAnnTitle(a.title); setNewAnnContent(a.content); setNewAnnType(a.type); window.scrollTo(0, 0); }} className="btn btn-outline" style={{ color: 'var(--primary-color)', borderColor: 'var(--primary-color)', padding: '0.5rem' }}><Edit2 size={18} /></button>
+                    <button onClick={async () => { if(window.confirm('Xóa?')) { await removeAnnouncement(a.id); await loadData(); } }} className="btn btn-outline" style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-color)', padding: '0.5rem' }}><Trash2 size={18} /></button>
+                  </div>
                 </li>
               ))}
             </ul>
